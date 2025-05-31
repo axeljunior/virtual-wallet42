@@ -34,8 +34,8 @@ export class TransactionsService {
 
     constructor(private readonly userService: UsersService) { }
     async createTransaction(dto: CreateTransactionDto) {
-        const sender = await this.userService.getUserById(dto.sender.id);
-        const receiver = await this.userService.getUserById(dto.receiver.id);
+        const sender = await this.userService.getUserByEmail(dto.sender.id);
+        const receiver = await this.userService.getUserByEmail(dto.receiver.id);
 
         if (!sender || !receiver) {
             throw new NotFoundException('Sender or receiver not found');
@@ -64,8 +64,8 @@ export class TransactionsService {
             throw new ConflictException('Sender and receiver cannot be the same user');
         }
 
-        const sender = await this.userService.getUserById(transaction?.sender.id);
-        const receiver = await this.userService.getUserById(transaction?.receiver.id);
+        const sender = await this.userService.getUserByEmail(transaction?.sender.id);
+        const receiver = await this.userService.getUserByEmail(transaction?.receiver.id);
 
         if (!sender || !receiver) {
             throw new NotFoundException('Sender or receiver not found');

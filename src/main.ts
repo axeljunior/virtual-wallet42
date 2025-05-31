@@ -10,7 +10,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Main');
   // const config = app.get<ConfigService>(ConfigService);
-  const env: ConfigService = new ConfigService()
+  // const env: ConfigService = new ConfigService()
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -30,8 +30,8 @@ async function bootstrap() {
       .setTitle('Grupo AC Wallet')
       .setDescription('Grupo AC Wallet')
       .setVersion('0.1')
-      .addBearerAuth(undefined, 'defaultBearerAuth')
-      .addBearerAuth(undefined, 'refreshBearerAuth')
+      .addBearerAuth(undefined, 'bearerAuth')
+      // .addBearerAuth(undefined, 'refreshBearerAuth')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
