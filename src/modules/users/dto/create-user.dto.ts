@@ -20,11 +20,4 @@ export class CreateUserDto {
     message: passwordValidation.message,
   })
   password: string;
-
-  @ApiProperty({
-    example: 'admin',
-  })
-  @IsNotEmpty()
-  @IsString()
-  username: string;
 }

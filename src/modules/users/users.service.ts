@@ -2,18 +2,19 @@ import { ConflictException, Injectable, Logger, NotFoundException } from '@nestj
 import { randomBytes } from 'crypto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { scrypt } from '../auth/constants/scrypt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { UserEntity } from 'src/providers/database/entities/user.entity';
+import { Repository } from 'typeorm';
 
 const USERS_TESTE = [
   {
     id: '1',
-    username: 'Axel Jr',
     email: 'axel@teste.com',
     password: '4c0992d7bd3ff777.23bad9c2810cf28304f0db6f474cce75516c90f6a065b16a9257d9ac36fcb70e',
     balance: 0
   },
   {
     id: '2',
-    username: 'Josh Hdg',
     email: 'josh@teste.com',
     password: '21100cced83d0df2.8083d409dd54aaba4791cdf8287e70143a12cf403aa0e34f906ca90b5977d310',
     balance: 50000
@@ -22,6 +23,9 @@ const USERS_TESTE = [
 
 @Injectable()
 export class UsersService {
+  constructor(  @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>
+  ) {}
   async getUserByEmail(email: string) {
     const user = USERS_TESTE.find(user => user.email === email);
 
@@ -49,11 +53,12 @@ export class UsersService {
       id: (USERS_TESTE.length + 1).toString(),
       email: dto.email,
       password: saltAndHash,
-      username: dto.username,
       balance: 0
     };
 
     USERS_TESTE.push(newUser);
+
+    await this.userRepository.save({ email: dto.email, password: saltAndHash });
 
     Logger.log(`User created: `, newUser);
 
