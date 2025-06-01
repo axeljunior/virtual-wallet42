@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsObject, IsString, IsUUID, Matches } from 'class-validator';
 
-export class CreateTransactionDto {
+export class CreateSolicitationDto {
 
   @ApiProperty()
   @IsNotEmpty()
@@ -9,6 +9,6 @@ export class CreateTransactionDto {
   value: number; // Transferred amount
 
   @ApiProperty()
-  @IsString()
+  @IsObject()
   receiverEmail: string;
 }

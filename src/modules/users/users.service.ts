@@ -5,6 +5,7 @@ import { scrypt } from '../auth/constants/scrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from "../../providers/database/entities/user.entity";
 import { Repository } from 'typeorm';
+import { err, ok } from 'tryless';
 
 @Injectable()
 export class UsersService {
@@ -52,11 +53,18 @@ export class UsersService {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      return err('User update balance: UserNotFound', { userId, message: 'Usuario não encontrado' });
     }
 
-    await this.userRepository.update(userId, { balance: newBalance });
+    try {
 
-    return user;
+      await this.userRepository.update(userId, { balance: newBalance });
+
+    } catch (e) {
+      Logger.error(`Error updating user balance: ${e}`, 'UsersService');
+      return err('User update balance: DatabaseError', { userId, message: 'Erro ao atualizar o saldo do usuário', e });
+    }
+
+    return ok(user);
   }
 }

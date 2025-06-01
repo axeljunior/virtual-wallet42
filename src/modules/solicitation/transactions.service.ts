@@ -4,13 +4,8 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TransactionEntity } from '../../providers/database/entities/transaction.entity';
-
-enum ETransactionStatus {
-    PENDING = 'pending',
-    COMPLETED = 'completed',
-    FAILED = 'failed',
-    CANCELLED = 'cancelled'
-}
+import { ICurrentUser } from '../../commons/interfaces/current-user.interface';
+import { err, ok } from 'tryless';
 
 @Injectable()
 export class TransactionsService {
@@ -18,89 +13,90 @@ export class TransactionsService {
     constructor(@InjectRepository(TransactionEntity)
         private readonly transactionRepository: Repository<TransactionEntity>,
         private readonly userService: UsersService) { }
-    async createTransaction(dto: CreateTransactionDto) {
-        const sender = await this.userService.getUserByEmail(dto.sender.id);
-        const receiver = await this.userService.getUserByEmail(dto.receiver.id);
+    async createTransaction(dto: CreateTransactionDto, user: ICurrentUser) {
+        const sender = await this.userService.getUserByEmail(user.email);
+        const receiver = await this.userService.getUserByEmail(dto.receiverEmail);
 
         if (!sender || !receiver) {
-            throw new NotFoundException('Sender or receiver not found');
+            return err("Transaction created: UserNotFound", 'Usuário remetente ou destinatário não encontrado');
         }
 
-        const newTransaction = {
-            sender: dto.sender,
-            receiver: dto.receiver,
-            value: dto.value,
-        };
+        try {
+            const newTransaction = this.transactionRepository.create({
+                userSender: sender,
+                userReceiver: receiver,
+                value: dto.value,
+            });
 
-        await this.transactionRepository.save(newTransaction);
+            await this.transactionRepository.save(newTransaction);
 
-        Logger.log(`Transaction created: ${JSON.stringify(newTransaction)}`, 'TransactionsService');
+            return ok(newTransaction);
 
-        // delete newTransaction.password;
-        return newTransaction;
+        } catch (e) {
+            Logger.error(`Error creating transaction: ${e.message}`, 'TransactionsService');
+            return err("Transaction created: DatabaseError", 'Erro ao criar transação');
+        }
+
     }
 
-    async validateTransaction(transaction: TransactionEntity) {
+    async validateTransaction(transaction: TransactionEntity | null) {
 
-        if (transaction.userSender.id === transaction.userReceiver.id) {
-            throw new ConflictException('Sender and receiver cannot be the same user');
+        if (!transaction) {
+            return err("NotFound", 'Nenhuma transação encontrada')
         }
 
-        const sender = await this.userService.getUserByEmail(transaction?.userSender.email);
-        const receiver = await this.userService.getUserByEmail(transaction?.userReceiver.email);
+        if (!transaction.userSender || !transaction.userReceiver) {
+            return err("UserNotFound", 'Os usuários envolvidos na transação não foram encontrados')
+        }
 
-        if (!sender || !receiver) {
-            throw new NotFoundException('Sender or receiver not found');
+        if (transaction.userSender.id === transaction.userReceiver.id) {
+            return err("UserMustBeDifferent", 'Os usuários remetente e destinatário não podem ser os mesmos')
         }
 
         if (transaction.value <= 0) {
-            return 'O valor de transferencia deve ser maior que 0'
+            return err("TransferValueGreaterThanZero", 'O valor de transferencia deve ser maior que 0')
         }
 
-        if (sender.balance < transaction.value) {
-            return 'Saldo insuficiente para executar a transferencia'
+        if (transaction.userSender.balance < transaction.value) {
+            return err("TransferValueNotEnough", 'Saldo insuficiente para executar a transferencia')
         }
+
+        return ok();
     }
 
-    async undoTransfer(transactionId) {}
-
-    async validateContestation(transactionId: string) {
+    async undoTransfer(transactionId: string) {
         const transaction = await this.transactionRepository.findOne({ where: { id: transactionId }, relations: ['userSender', 'userReceiver'] });
 
-        if (!transaction) {
-            throw new NotFoundException('Transaction not found');
+        const isValidTransaction = await this.validateTransaction(transaction);
+
+        if (!isValidTransaction.success) {
+            return isValidTransaction;
         }
 
-        await this.validateTransaction(transaction);
     }
 
     async excuteTransfer(transactionId: string) {
         const transaction = await this.transactionRepository.findOne({ where: { id: transactionId }, relations: ['userSender', 'userReceiver'] });
 
-        if (!transaction) {
-            throw new NotFoundException('Nenhuma transação encontrada');
+        const isValidTransaction = await this.validateTransaction(transaction);
+
+        if (!isValidTransaction.success) {
+            return isValidTransaction;
         }
 
-        if (!transaction.userSender || !transaction.userReceiver) {
-            throw new NotFoundException('Os usuários envolvidos na transação não foram encontrados');
-        }
+        const validatedTransaction = transaction!;
 
-        if (transaction.userSender.id === transaction.userReceiver.id) {
-            throw new ConflictException('Os usuários remetente e destinatário não podem ser os mesmos');
-        }
+        const newSendBalance = Number(validatedTransaction.userSender.balance) - Number(validatedTransaction.value);
+        const newReceiverBalance = Number(validatedTransaction.userReceiver.balance) + Number(validatedTransaction.value);
 
-        if (transaction.value <= 0) {
-            throw new BadRequestException('O valor de transferencia deve ser maior que 0')
-        }
+        let updateUserBalanseResult = await this.userService.updateUserBalance(validatedTransaction.userSender.id, newSendBalance);
 
-        if (transaction.userSender.balance < transaction.value) {
-            throw new BadRequestException('Saldo insuficiente para executar a transferencia')
-        }
+        if(!updateUserBalanseResult.success) return updateUserBalanseResult
 
-        const newSendBalance = Number(transaction.userSender.balance) - Number(transaction.value);
-        const newReceiverBalance = Number(transaction.userReceiver.balance) + Number(transaction.value);
+        await this.userService.updateUserBalance(validatedTransaction.userReceiver.id, newReceiverBalance);
 
-        await this.userService.updateUserBalance(transaction.userSender.id, newSendBalance);
-        await this.userService.updateUserBalance(transaction.userReceiver.id, newReceiverBalance);
+        if(!updateUserBalanseResult.success) return updateUserBalanseResult
+
+        return ok()
     }
 }

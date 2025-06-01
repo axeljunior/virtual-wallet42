@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.modules';
+import helmet from 'helmet';
 // import { SwaggerTheme, SwaggerThemeNameEnum } from 'swagger-themes';
 
 async function bootstrap() {
@@ -42,6 +43,8 @@ async function bootstrap() {
 
     SwaggerModule.setup('swagger', app, document, options);
   }
+
+  app.use(helmet())
 
   await app.listen(port, () => {
     logger.log(`Server listening at port ${port}`);
