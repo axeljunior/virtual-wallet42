@@ -3,9 +3,9 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { JwtAuth } from 'src/commons/decorators/jwt-auth.decorator';
-import { CurrentUser } from 'src/commons/decorators/current-user.decorator';
-import { ICurrentUser } from 'src/commons/interfaces/current-user.interface';
+import { JwtAuth } from '../../commons/decorators/jwt-auth.decorator';
+import { CurrentUser } from '../../commons/decorators/current-user.decorator';
+import { ICurrentUser } from '../../commons/interfaces/current-user.interface';
 
 @ApiTags('Users')
 @Controller('users')

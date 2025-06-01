@@ -5,14 +5,14 @@ import { UserEntity } from "./user.entity";
 @Entity("transaction")
 export class TransactionEntity {
 
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @ManyToOne(() => UserEntity, { eager: true })
+  @ManyToOne(() => UserEntity, user => user.sentTransactions, { eager: true })
   @JoinColumn()
   userSender: UserEntity;
 
-  @ManyToOne(() => UserEntity, { eager: true })
+  @ManyToOne(() => UserEntity, user => user.receivedTransactions, { eager: true })
   @JoinColumn()
   userReceiver: UserEntity;
 

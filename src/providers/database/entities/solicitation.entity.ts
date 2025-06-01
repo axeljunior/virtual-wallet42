@@ -5,8 +5,8 @@ import { TransactionEntity } from "./transaction.entity";
 @Entity("solicitation")
 export class SolicitationEntity {
 
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @OneToOne(() => TransactionEntity)
   @JoinColumn()

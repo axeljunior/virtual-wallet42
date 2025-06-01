@@ -3,23 +3,8 @@ import { randomBytes } from 'crypto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { scrypt } from '../auth/constants/scrypt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { UserEntity } from 'src/providers/database/entities/user.entity';
+import { UserEntity } from "../../providers/database/entities/user.entity";
 import { Repository } from 'typeorm';
-
-const USERS_TESTE = [
-  {
-    id: '1',
-    email: 'axel@teste.com',
-    password: '4c0992d7bd3ff777.23bad9c2810cf28304f0db6f474cce75516c90f6a065b16a9257d9ac36fcb70e',
-    balance: 0
-  },
-  {
-    id: '2',
-    email: 'josh@teste.com',
-    password: '21100cced83d0df2.8083d409dd54aaba4791cdf8287e70143a12cf403aa0e34f906ca90b5977d310',
-    balance: 50000
-  }
-]
 
 @Injectable()
 export class UsersService {
@@ -27,13 +12,14 @@ export class UsersService {
     private readonly userRepository: Repository<UserEntity>
   ) {}
   async getUserByEmail(email: string) {
-    const user = USERS_TESTE.find(user => user.email === email);
+    const user = await this.userRepository.findOne({ where: { email }, relations: ['sentTransactions', 'receivedTransactions'] });
+    console.log(user?.transactions)
 
     return user;
   }
 
-  async validateUser(email: string, password?: string) {
-    const existingUser = USERS_TESTE.find(user => user.email === email);
+  async validateUser(email: string) {
+    const existingUser = await this.userRepository.findOne({ where: { email } });
 
     if(existingUser) {
       throw new ConflictException('User already exists');
@@ -42,25 +28,20 @@ export class UsersService {
 
   async createUser(dto: CreateUserDto) {
 
-    await this.validateUser(dto.email, dto.password);
+    await this.validateUser(dto.email);
 
     const salt = randomBytes(8).toString('hex');
     const hash = await scrypt(dto.password, salt, 32) as Buffer;
 
     const saltAndHash = `${salt}.${hash.toString('hex')}`;
 
-    const newUser = {
-      id: (USERS_TESTE.length + 1).toString(),
+    const newUser = this.userRepository.create({
       email: dto.email,
       password: saltAndHash,
       balance: 0
-    };
-
-    USERS_TESTE.push(newUser);
+    });
 
     await this.userRepository.save({ email: dto.email, password: saltAndHash });
-
-    Logger.log(`User created: `, newUser);
 
     const { password: _, ...userWithoutPassword } = newUser;
 
@@ -68,17 +49,14 @@ export class UsersService {
   }
 
   async updateUserBalance(userId: string, newBalance: number) {
-    const user = USERS_TESTE.find(user => user.id === userId);
+    const user = await this.userRepository.findOne({ where: { id: userId } });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    user.balance = newBalance; // Example balance update logic
+    await this.userRepository.update(userId, { balance: newBalance });
 
-    USERS_TESTE.push(user);
-
-    // delete newUser.password;
     return user;
   }
 }
