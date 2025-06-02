@@ -9,7 +9,7 @@ import { SolicitationsService } from './solicitations.service';
 import { SolicitationEntity } from '../../providers/database/entities/solicitation.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity, TransactionEntity, SolicitationEntity])], // Assuming you have entities to import here
+  imports: [TypeOrmModule.forFeature([UserEntity, TransactionEntity, SolicitationEntity])],
   controllers: [TransactionsController],
   providers: [TransactionsService, SolicitationsService, UsersService],
 })

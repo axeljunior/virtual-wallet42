@@ -9,7 +9,7 @@ export class SolicitationEntity {
   id: string;
 
   @ManyToOne(() => TransactionEntity)
-  @JoinColumn() // cria a FK transactionId
+  @JoinColumn()
   transaction: TransactionEntity;
 
   @Column({ type: 'varchar', length: 100 })

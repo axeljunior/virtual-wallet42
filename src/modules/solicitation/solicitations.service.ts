@@ -12,8 +12,7 @@ import { err, ok } from 'tryless';
 export class SolicitationsService {
 
     constructor(@InjectRepository(SolicitationEntity)
-        private readonly solicitationRepository: Repository<SolicitationEntity>,
-        private readonly userService: UsersService) { }
+        private readonly solicitationRepository: Repository<SolicitationEntity>) { }
 
     async createSolicitation(transferencia: TransactionEntity) {
         const newSolicitation = this.solicitationRepository.create({

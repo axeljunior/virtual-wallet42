@@ -4,13 +4,10 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.modules';
 import helmet from 'helmet';
-// import { SwaggerTheme, SwaggerThemeNameEnum } from 'swagger-themes';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Main');
-  // const config = app.get<ConfigService>(ConfigService);
-  // const env: ConfigService = new ConfigService()
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -18,8 +15,6 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
-
-  // app.useGlobalFilters(new SequelizeExceptionFilter());
 
   app.enableCors();
   const port = 3000;
@@ -31,14 +26,11 @@ async function bootstrap() {
       .setDescription('Grupo AC Wallet')
       .setVersion('0.1')
       .addBearerAuth(undefined, 'bearerAuth')
-      // .addBearerAuth(undefined, 'refreshBearerAuth')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
-    // const theme = new SwaggerTheme();
     const options = {
       explorer: true,
-      // customCss: theme.getBuffer(SwaggerThemeNameEnum.DARK),
     };
 
     SwaggerModule.setup('swagger', app, document, options);

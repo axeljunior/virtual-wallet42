@@ -1,5 +1,5 @@
 import { CreateSolicitationDto } from './dto/create-solicitation.dto';
-import { BadRequestException, Body, ConflictException, Controller, Get, HttpException, HttpStatus, Logger, Param, Patch, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, HttpException, HttpStatus, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { TransactionsService } from './transactions.service';
 import { JwtAuth } from '../../commons/decorators/jwt-auth.decorator';
@@ -8,7 +8,6 @@ import { ESolicitationStatus } from '../../commons/enums/solicitations-status.en
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { CurrentUser } from '../../commons/decorators/current-user.decorator';
 import { ICurrentUser } from '../../commons/interfaces/current-user.interface';
-import { ok } from 'tryless';
 import { ETransactionType } from '../../commons/enums/transferencia-type.enum';
 
 @ApiTags('Solicitations')
