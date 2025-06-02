@@ -1,5 +1,5 @@
 import { CreateSolicitationDto } from './dto/create-solicitation.dto';
-import { Body, ConflictException, Controller, Get, Logger, Param, Patch, Post } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Get, HttpException, HttpStatus, Logger, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { TransactionsService } from './transactions.service';
 import { JwtAuth } from '../../commons/decorators/jwt-auth.decorator';
@@ -8,6 +8,8 @@ import { ESolicitationStatus } from '../../commons/enums/solicitations-status.en
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { CurrentUser } from '../../commons/decorators/current-user.decorator';
 import { ICurrentUser } from '../../commons/interfaces/current-user.interface';
+import { ok } from 'tryless';
+import { ETransactionType } from '../../commons/enums/transferencia-type.enum';
 
 @ApiTags('Solicitations')
 @Controller('solicitations')
@@ -20,15 +22,15 @@ export class TransactionsController {
 
     const createTransactionResponse = await this.transactionsService.createTransaction(createTransactionDto, currentUser);
 
-    if(!createTransactionResponse.success) return createTransactionResponse
+    if(!createTransactionResponse.success) throw new HttpException(createTransactionResponse, HttpStatus.BAD_REQUEST);
 
     const newTransaction = createTransactionResponse.data;
 
     const createSolicitationResponse = await this.solicitationService.createSolicitation(newTransaction);
 
-    if(!createSolicitationResponse.success) return createSolicitationResponse;
+    if(!createSolicitationResponse.success) throw new HttpException(createSolicitationResponse, HttpStatus.BAD_REQUEST);
 
-    return newTransaction;
+    return createTransactionResponse;
   }
 
   @Patch(':solicitationId')
@@ -40,22 +42,30 @@ export class TransactionsController {
 
     const solicitation = getSolicitationResponse.data;
 
-    if(solicitation.type === 'transferencia') {
-      if (solicitation.status !== ESolicitationStatus.PENDING) {
-        throw new ConflictException('Solicitação não está pendente');
-      }
+    if(solicitation.type === ETransactionType.TRANSFER) {
+      if (solicitation.status !== ESolicitationStatus.PENDING) throw new HttpException("A solicitação já foi processada", HttpStatus.BAD_REQUEST)
 
-      const response = await this.transactionsService.excuteTransfer(solicitation.transaction.id);
+      const executeTransferResponse = await this.transactionsService.excuteTransfer(solicitation.transaction.id);
 
-      if(!response.success) return response
+      if(!executeTransferResponse.success) return executeTransferResponse
 
       await this.solicitationService.updateSolicitationStatus(solicitationId, ESolicitationStatus.COMPLETED);
 
-      return response;
+      return executeTransferResponse;
     }
 
     if(solicitation.type === 'CONTESTATION') {
-      return await this.transactionsService.undoTransfer(solicitation.transaction.id);
+      if (solicitation.status !== ESolicitationStatus.PENDING) throw new HttpException("A solicitação já foi processada", HttpStatus.BAD_REQUEST)
+
+      const executeUndoTransferResponse = await this.transactionsService.undoTransfer(solicitation.transaction.id);
+
+      if(!executeUndoTransferResponse.success) return executeUndoTransferResponse
+
+      await this.solicitationService.updateSolicitationStatus(solicitationId, ESolicitationStatus.COMPLETED);
+
+      return executeUndoTransferResponse;
     }
+
+    throw new BadRequestException('Invalid solicitation type')
   }
 }

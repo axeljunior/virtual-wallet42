@@ -58,20 +58,29 @@ async function seed() {
 
   // Criar solicitação ligada à transação
   const solicitation = solicitationRepo.create({
-    status: 'pendente',
-    type: 'transferencia',
+    status: 'PENDING',
+    type: 'TRANSFER',
     transaction: transaction,
   });
 
   await solicitationRepo.save(solicitation);
 
-    const solicitation2 = solicitationRepo.create({
-    status: 'pendente',
-    type: 'transferencia',
+  const solicitation2 = solicitationRepo.create({
+    status: 'PENDING',
+    type: 'TRANSFER',
     transaction: transaction2,
   });
 
   await solicitationRepo.save(solicitation2);
+
+
+  const solicitation3 = solicitationRepo.create({
+    status: 'PENDING',
+    type: 'CONTESTATION',
+    transaction: transaction2,
+  });
+
+  await solicitationRepo.save(solicitation3);
 
   console.log('✅ Seed executado com sucesso!');
   await app.close();

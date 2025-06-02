@@ -1,15 +1,15 @@
-import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { TransactionEntity } from "./transaction.entity";
 
 
-@Entity("solicitation")
+@Entity("solicitations")
 export class SolicitationEntity {
 
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => TransactionEntity)
-  @JoinColumn()
+  @ManyToOne(() => TransactionEntity)
+  @JoinColumn() // cria a FK transactionId
   transaction: TransactionEntity;
 
   @Column({ type: 'varchar', length: 100 })

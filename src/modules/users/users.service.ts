@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConflictException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { scrypt } from '../auth/constants/scrypt';
@@ -14,7 +14,6 @@ export class UsersService {
   ) {}
   async getUserByEmail(email: string) {
     const user = await this.userRepository.findOne({ where: { email }, relations: ['sentTransactions', 'receivedTransactions'] });
-    console.log(user?.transactions)
 
     return user;
   }
@@ -23,30 +22,39 @@ export class UsersService {
     const existingUser = await this.userRepository.findOne({ where: { email } });
 
     if(existingUser) {
-      throw new ConflictException('User already exists');
+      return err('UserAlreadyExists', { message: "Usuario já existe" });
     }
+
+    return ok();
+  }
+
+  async generateEncryptedPassword(password: string) {
+    const salt = randomBytes(8).toString('hex');
+    const hash = await scrypt(password, salt, 32) as Buffer;
+    return `${salt}.${hash.toString('hex')}`;
   }
 
   async createUser(dto: CreateUserDto) {
 
-    await this.validateUser(dto.email);
+    const isValidUser = await this.validateUser(dto.email);
 
-    const salt = randomBytes(8).toString('hex');
-    const hash = await scrypt(dto.password, salt, 32) as Buffer;
+    if (!isValidUser.success) {
+      return isValidUser;
+    }
 
-    const saltAndHash = `${salt}.${hash.toString('hex')}`;
+    const encryptedPassword = await this.generateEncryptedPassword(dto.password);
 
     const newUser = this.userRepository.create({
       email: dto.email,
-      password: saltAndHash,
+      password: encryptedPassword ,
       balance: 0
     });
 
-    await this.userRepository.save({ email: dto.email, password: saltAndHash });
+    await this.userRepository.save({ email: dto.email, password: encryptedPassword  });
 
     const { password: _, ...userWithoutPassword } = newUser;
 
-    return userWithoutPassword;
+    return ok(userWithoutPassword);
   }
 
   async updateUserBalance(userId: string, newBalance: number) {

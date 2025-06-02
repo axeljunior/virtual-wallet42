@@ -11,8 +11,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         url: config.get<string>('POSTGRES_URL'),
         autoloadEntities: true,
         synchronize: config.get<string>('ENVIROMENT') === 'dev' ? true : false,
-        logging: true,
-        logger: 'advanced-console',
+        // logging: true,
+        // logger: 'advanced-console',
         entities: [__dirname + '/../**/*.entity.{ts,js}']
       }),
     }),

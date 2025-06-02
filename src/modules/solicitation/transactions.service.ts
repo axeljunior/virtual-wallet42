@@ -21,6 +21,10 @@ export class TransactionsService {
             return err("Transaction created: UserNotFound", 'Usuário remetente ou destinatário não encontrado');
         }
 
+        if (!sender.id === !receiver.id) {
+            return err("Transaction created: UserCanNotBeEqual", 'Usuário remetente e destinatário não podem ser iguais');
+        }
+
         try {
             const newTransaction = this.transactionRepository.create({
                 userSender: sender,
@@ -73,6 +77,21 @@ export class TransactionsService {
             return isValidTransaction;
         }
 
+        const validatedTransaction = transaction!;
+
+        const newSendBalance = Number(validatedTransaction.userSender.balance) + Number(validatedTransaction.value);
+        const newReceiverBalance = Number(validatedTransaction.userReceiver.balance) - Number(validatedTransaction.value);
+
+        let updateUserBalanseResult = await this.userService.updateUserBalance(validatedTransaction.userSender.id, newSendBalance);
+
+        if(!updateUserBalanseResult.success) return updateUserBalanseResult
+
+        await this.userService.updateUserBalance(validatedTransaction.userReceiver.id, newReceiverBalance);
+
+        if(!updateUserBalanseResult.success) return updateUserBalanseResult
+
+        return ok("Transferência desfeita com sucesso");
+
     }
 
     async excuteTransfer(transactionId: string) {
@@ -97,6 +116,6 @@ export class TransactionsService {
 
         if(!updateUserBalanseResult.success) return updateUserBalanseResult
 
-        return ok()
+        return ok("Transferência executada com sucesso");
     }
 }

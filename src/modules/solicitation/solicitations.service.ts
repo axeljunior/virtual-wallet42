@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { TransactionEntity } from '../../providers/database/entities/transaction.entity';
 import { SolicitationEntity } from '../../providers/database/entities/solicitation.entity';
 import { ESolicitationStatus } from '../../commons/enums/solicitations-status.enum';
-import { ETransactionStatus } from '../../commons/enums/transferencia-type.enum';
+import { ETransactionType } from '../../commons/enums/transferencia-type.enum';
 import { err, ok } from 'tryless';
 
 @Injectable()
@@ -19,7 +19,7 @@ export class SolicitationsService {
         const newSolicitation = this.solicitationRepository.create({
             transaction: transferencia,
             status: ESolicitationStatus.PENDING,
-            type: ETransactionStatus.TRANSFER
+            type: ETransactionType.TRANSFER
         });
 
         try {
@@ -34,7 +34,7 @@ export class SolicitationsService {
     }
 
     async getSolicitationById(solicitationId: string) {
-        const solicitation = await this.solicitationRepository.findOne({ where: { id: solicitationId } });
+        const solicitation = await this.solicitationRepository.findOne({ where: { id: solicitationId }, relations: ['transaction'] });
 
         if (!solicitation) {
             return err("SolicitationNotFound", 'Solicitação não encontrada');

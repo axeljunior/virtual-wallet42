@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -13,13 +13,18 @@ export class UsersController {
   constructor(private readonly userService: UsersService) {}
   @Post()
   // @JwtAuth()
-  createUser(@Body() dto: CreateUserDto) {
-    return this.userService.createUser(dto);
+  async createUser(@Body() dto: CreateUserDto) {
+    const createUserResponse = await this.userService.createUser(dto);
+
+    if(!createUserResponse.success) throw new HttpException(createUserResponse, HttpStatus.BAD_REQUEST);
+
+    return createUserResponse;
   }
 
   @Get()
   @JwtAuth()
   testeGetUser(@CurrentUser() currentUser: ICurrentUser) {
+
     return this.userService.getUserByEmail(currentUser.email);
   }
 }

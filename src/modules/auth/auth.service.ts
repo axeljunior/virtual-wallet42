@@ -3,6 +3,7 @@ import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { UsersService } from '../users/users.service';
 import { scrypt } from '../auth/constants/scrypt';
+import { err, ok } from "tryless";
 
 
 @Injectable()
@@ -17,14 +18,14 @@ export class AuthService {
     const user = await this.userService.getUserByEmail(email);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      return err('NotAuthorizated', 'Invalid email or password');
     }
 
     const [salt, storedHash] = user.password.split('.');
     const hash = await scrypt(password, salt, 32) as Buffer;
 
     if(storedHash !== hash.toString('hex')) {
-      throw new UnauthorizedException('Invalid email or password');
+      return err('NotAuthorizated', 'Invalid email or password');
     }
 
     Logger.log(`User signed in: `, user);
@@ -33,10 +34,10 @@ export class AuthService {
 
     // return { accessToken: this.jwtService.sign(payload)}; // ??????
 
-    return { accessToken: this.jwtService.sign(payload, {
+    return ok({ accessToken: this.jwtService.sign(payload, {
         expiresIn: this.configService.getOrThrow<string>('JWT_EXPIRATION_TIME'),
         secret: this.configService.getOrThrow<string>('JWT_SECRET'),
       })
-    };
+    });
   }
 }
