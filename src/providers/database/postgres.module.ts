@@ -6,15 +6,21 @@ import { TypeOrmModule } from '@nestjs/typeorm';
   imports: [
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        url: config.get<string>('POSTGRES_URL'),
-        autoloadEntities: true,
-        synchronize: config.get<string>('ENVIROMENT') === 'dev' ? true : false,
-        // logging: true,
-        // logger: 'advanced-console',
-        entities: [__dirname + '/../**/*.entity.{ts,js}']
-      }),
+      useFactory: (config: ConfigService) => {
+        console.log(config.get<string>('api.nodeEnv'))
+        console.log(config.get<string>('postgres.url'))
+        console.log(config.get<string>('postgres.schema'))
+        return {
+          type: 'postgres',
+          url: config.get<string>('postgres.url'),
+          autoloadEntities: true,
+          synchronize: config.get<string>('api.nodeEnv') === 'development' || 'test' ? true : false,
+          schema: config.get<string>('api.nodeEnv') === 'test' ? "tests" :  config.get<string>('postgres.schema'),
+          // logging: true,
+          // logger: 'advanced-console',
+          entities: [__dirname + '/../**/*.entity.{ts,js}']
+        }
+      },
     }),
   ],
 })

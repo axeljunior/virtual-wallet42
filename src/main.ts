@@ -8,13 +8,16 @@ import helmet from 'helmet';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Main');
-
+  
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
       whitelist: true,
     }),
   );
+  
+  const configService = app.get(ConfigService);
+  console.log('Config Service:',  configService.get<string>('api.nodeEnv'));
 
   app.enableCors();
   const port = 3000;
