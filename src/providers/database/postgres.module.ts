@@ -7,9 +7,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        console.log(config.get<string>('api.nodeEnv'))
-        console.log(config.get<string>('postgres.url'))
-        console.log(config.get<string>('postgres.schema'))
         return {
           type: 'postgres',
           url: config.get<string>('postgres.url'),
