@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
-import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { CreateTransactionTransferDto } from './dto/create-transaction-transfer.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TransactionEntity } from '../../providers/database/entities/transaction.entity';
@@ -12,7 +12,7 @@ export class TransactionsService {
     constructor(@InjectRepository(TransactionEntity)
         private readonly transactionRepository: Repository<TransactionEntity>,
         private readonly userService: UsersService) { }
-    async createTransaction(dto: CreateTransactionDto, user: ICurrentUser) {
+    async createTransaction(dto: CreateTransactionTransferDto, user: ICurrentUser) {
         const sender = await this.userService.getUserByEmail(user.email);
         const receiver = await this.userService.getUserByEmail(dto.receiverEmail);
 
@@ -66,7 +66,7 @@ export class TransactionsService {
     }
 
     async undoTransfer(transactionId: string) {
-        const transaction = await this.transactionRepository.findOne({ where: { id: transactionId }, relations: ['userSender', 'userReceiver'] });
+        const transaction = await this.getTransectionById(transactionId)
 
         const validatedTransaction = await this.validateTransaction(transaction);
 
@@ -79,8 +79,18 @@ export class TransactionsService {
         return validatedTransaction;
     }
 
+    async getTransectionById(transactionId: string) {
+        const findedTransaction = await this.transactionRepository.findOne({ where: { id: transactionId }, relations: ['userSender', 'userReceiver'] });
+
+        if(!findedTransaction) {
+            throw new NotFoundException(`Transação '${transactionId}' não encontrada`)
+        }
+
+        return findedTransaction
+    }
+
     async excuteTransfer(transactionId: string) {
-        const transaction = await this.transactionRepository.findOne({ where: { id: transactionId }, relations: ['userSender', 'userReceiver'] });
+        const transaction = await this.getTransectionById(transactionId)
 
         const validatedTransaction = await this.validateTransaction(transaction);
 

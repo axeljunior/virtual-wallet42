@@ -12,11 +12,11 @@ export class SolicitationsService {
     constructor(@InjectRepository(SolicitationEntity)
         private readonly solicitationRepository: Repository<SolicitationEntity>) { }
 
-    async createSolicitation(transferencia: TransactionEntity) {
+    async createSolicitation(transferencia: TransactionEntity, solicitationType: ETransactionType) {
         const newSolicitation = this.solicitationRepository.create({
             transaction: transferencia,
             status: ESolicitationStatus.PENDING,
-            type: ETransactionType.TRANSFER
+            type: solicitationType
         });
 
         try {

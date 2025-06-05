@@ -49,7 +49,6 @@ describe('UsersController (e2e)', () => {
     );
 
     const dataSource = app.get(DataSource);
-    
 
     // Limpar o banco de dados antes dos testes
     await dataSource.dropDatabase();
