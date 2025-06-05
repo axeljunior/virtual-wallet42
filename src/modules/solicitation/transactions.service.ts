@@ -1,11 +1,10 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TransactionEntity } from '../../providers/database/entities/transaction.entity';
 import { ICurrentUser } from '../../commons/interfaces/current-user.interface';
-import { err, ok } from 'tryless';
 
 @Injectable()
 export class TransactionsService {
@@ -18,11 +17,11 @@ export class TransactionsService {
         const receiver = await this.userService.getUserByEmail(dto.receiverEmail);
 
         if (!sender || !receiver) {
-            return err("Transaction created: UserNotFound", 'Usuário remetente ou destinatário não encontrado');
+            throw new NotFoundException('Usuário remetente ou destinatário não encontrado')
         }
 
         if (!sender.id === !receiver.id) {
-            return err("Transaction created: UserCanNotBeEqual", 'Usuário remetente e destinatário não podem ser iguais');
+            throw new ConflictException('Usuário remetente e destinatário não podem ser iguais')
         }
 
         try {
@@ -34,88 +33,63 @@ export class TransactionsService {
 
             await this.transactionRepository.save(newTransaction);
 
-            return ok(newTransaction);
+            return newTransaction;
 
         } catch (e) {
-            Logger.error(`Error creating transaction: ${e.message}`, 'TransactionsService');
-            return err("Transaction created: DatabaseError", 'Erro ao criar transação');
+            Logger.error(`Erro ao criar transação: ${e.message}`, 'TransactionsService');
+            throw new InternalServerErrorException('DatabaseError: Erro ao criar transação');
         }
-
     }
 
     async validateTransaction(transaction: TransactionEntity | null) {
 
         if (!transaction) {
-            return err("NotFound", 'Nenhuma transação encontrada')
+            throw new NotFoundException('Transação não encontrada');
         }
 
         if (!transaction.userSender || !transaction.userReceiver) {
-            return err("UserNotFound", 'Os usuários envolvidos na transação não foram encontrados')
+            throw new NotFoundException('Usuários envolvidos na transação não encontrados');
         }
 
         if (transaction.userSender.id === transaction.userReceiver.id) {
-            return err("UserMustBeDifferent", 'Os usuários remetente e destinatário não podem ser os mesmos')
+            throw new ConflictException('Os usuários remetente e destinatário não podem ser os mesmos');
         }
 
         if (transaction.value <= 0) {
-            return err("TransferValueGreaterThanZero", 'O valor de transferencia deve ser maior que 0')
+            throw new BadRequestException('O valor da transferência deve ser maior que 0');
         }
 
         if (transaction.userSender.balance < transaction.value) {
-            return err("TransferValueNotEnough", 'Saldo insuficiente para executar a transferencia')
+            throw new BadRequestException('Saldo insuficiente para realizar a transferência');
         }
-
-        return ok();
+        return transaction;
     }
 
     async undoTransfer(transactionId: string) {
         const transaction = await this.transactionRepository.findOne({ where: { id: transactionId }, relations: ['userSender', 'userReceiver'] });
 
-        const isValidTransaction = await this.validateTransaction(transaction);
-
-        if (!isValidTransaction.success) {
-            return isValidTransaction;
-        }
-
-        const validatedTransaction = transaction!;
+        const validatedTransaction = await this.validateTransaction(transaction);
 
         const newSendBalance = Number(validatedTransaction.userSender.balance) + Number(validatedTransaction.value);
         const newReceiverBalance = Number(validatedTransaction.userReceiver.balance) - Number(validatedTransaction.value);
 
-        let updateUserBalanseResult = await this.userService.updateUserBalance(validatedTransaction.userSender.id, newSendBalance);
-
-        if(!updateUserBalanseResult.success) return updateUserBalanseResult
-
+        await this.userService.updateUserBalance(validatedTransaction.userSender.id, newSendBalance);
         await this.userService.updateUserBalance(validatedTransaction.userReceiver.id, newReceiverBalance);
 
-        if(!updateUserBalanseResult.success) return updateUserBalanseResult
-
-        return ok("Transferência desfeita com sucesso");
-
+        return validatedTransaction;
     }
 
     async excuteTransfer(transactionId: string) {
         const transaction = await this.transactionRepository.findOne({ where: { id: transactionId }, relations: ['userSender', 'userReceiver'] });
 
-        const isValidTransaction = await this.validateTransaction(transaction);
-
-        if (!isValidTransaction.success) {
-            return isValidTransaction;
-        }
-
-        const validatedTransaction = transaction!;
+        const validatedTransaction = await this.validateTransaction(transaction);
 
         const newSendBalance = Number(validatedTransaction.userSender.balance) - Number(validatedTransaction.value);
         const newReceiverBalance = Number(validatedTransaction.userReceiver.balance) + Number(validatedTransaction.value);
 
-        let updateUserBalanseResult = await this.userService.updateUserBalance(validatedTransaction.userSender.id, newSendBalance);
-
-        if(!updateUserBalanseResult.success) return updateUserBalanseResult
-
+        await this.userService.updateUserBalance(validatedTransaction.userSender.id, newSendBalance);
         await this.userService.updateUserBalance(validatedTransaction.userReceiver.id, newReceiverBalance);
 
-        if(!updateUserBalanseResult.success) return updateUserBalanseResult
-
-        return ok("Transferência executada com sucesso");
+        return validatedTransaction;
     }
 }

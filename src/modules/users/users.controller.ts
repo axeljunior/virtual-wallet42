@@ -14,17 +14,12 @@ export class UsersController {
   @Post()
   // @JwtAuth()
   async createUser(@Body() dto: CreateUserDto) {
-    const createUserResponse = await this.userService.createUser(dto);
-
-    if(!createUserResponse.success) throw new HttpException(createUserResponse, HttpStatus.BAD_REQUEST);
-
-    return createUserResponse;
+    return await this.userService.createUser(dto);
   }
 
   @Get()
   @JwtAuth()
   testeGetUser(@CurrentUser() currentUser: ICurrentUser) {
-
     return this.userService.getUserByEmail(currentUser.email);
   }
 }

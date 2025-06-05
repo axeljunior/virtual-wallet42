@@ -1,12 +1,10 @@
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
+import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TransactionEntity } from '../../providers/database/entities/transaction.entity';
 import { SolicitationEntity } from '../../providers/database/entities/solicitation.entity';
 import { ESolicitationStatus } from '../../commons/enums/solicitations-status.enum';
 import { ETransactionType } from '../../commons/enums/transferencia-type.enum';
-import { err, ok } from 'tryless';
 
 @Injectable()
 export class SolicitationsService {
@@ -25,23 +23,27 @@ export class SolicitationsService {
             await this.solicitationRepository.save(newSolicitation);
 
         } catch (e) {
-            Logger.error(`Error creating solicitation: ${e.message}`, ' SolicitationsService');
-            return err(" Solicitation created: DatabaseError", 'Erro ao criar solicitação');
+            Logger.error(`Erro ao criar solicitação: ${e.message}`, ' SolicitationsService');
+            throw new InternalServerErrorException('DatabaseError: Erro ao criar solicitação');
         }
-
-        return ok()
     }
 
     async getSolicitationById(solicitationId: string) {
         const solicitation = await this.solicitationRepository.findOne({ where: { id: solicitationId }, relations: ['transaction'] });
 
         if (!solicitation) {
-            return err("SolicitationNotFound", 'Solicitação não encontrada');
+            throw new NotFoundException('Solicitação não encontrada')
         }
-        return ok(solicitation);
+
+        return solicitation;
     }
 
     updateSolicitationStatus(solicitationId: string, status: ESolicitationStatus) {
-        return this.solicitationRepository.update(solicitationId, { status });
+        try {
+            return this.solicitationRepository.update(solicitationId, { status });
+        } catch (e) {
+            Logger.error(`Erro ao atualizar status da solicitação: ${e.message}`, ' SolicitationsService');
+            throw new InternalServerErrorException('DatabaseError: Erro ao atualizar status da solicitação');
+        }
     }
 }

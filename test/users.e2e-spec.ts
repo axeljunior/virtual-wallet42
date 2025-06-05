@@ -103,8 +103,8 @@ describe('UsersController (e2e)', () => {
       .send(createUserDto)
       .expect(201);
 
-    expect(response.body.data).toHaveProperty('email', createUserDto.email);
-    expect(response.body.data).toHaveProperty('balance', 0);
+    expect(response.body).toHaveProperty('email', createUserDto.email);
+    expect(response.body).toHaveProperty('balance', 0);
 
     // Salvar o id do usuário para outros testes
     const userId = response.body.id;
@@ -125,10 +125,11 @@ describe('UsersController (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post('/users')
       .send(createUserDto)
-      .expect(400);
+      .expect(409);
 
-    expect(response.body).toHaveProperty('error', "UserAlreadyExists");
-    expect(response.body.success).toBe(false);
+    expect(response.body).toHaveProperty('error', "Conflict");
+    expect(response.body).toHaveProperty('message', "Email já cadastrado");
+    expect(response.body).toHaveProperty('statusCode', 409);
 
     // Salvar o id do usuário para outros testes
     const userId = response.body.id;
