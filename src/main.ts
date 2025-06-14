@@ -4,11 +4,13 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.modules';
 import helmet from 'helmet';
+import { CustomLogger } from './commons/utils/custom-logger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const logger = new Logger("App");
+  app.useLogger(app.get(CustomLogger))
 
   app.useGlobalPipes(
     new ValidationPipe({

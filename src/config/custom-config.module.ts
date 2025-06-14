@@ -26,6 +26,10 @@ export class ConfigValidationDto {
   @IsNotEmpty()
   @IsString()
   JWT_EXPIRATION_TIME?: string;
+
+  @IsNotEmpty()
+  @IsString()
+  LOG_RULES?: string
 }
 
 @Module({
