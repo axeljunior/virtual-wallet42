@@ -7,7 +7,8 @@ import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const logger = new Logger('Main');
+
+  const logger = new Logger("App");
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -22,8 +23,8 @@ async function bootstrap() {
 
   if (nodeEnv !== 'production') {
     const config = new DocumentBuilder()
-      .setTitle('Grupo AC Wallet')
-      .setDescription('Grupo AC Wallet')
+      .setTitle('42Wallet')
+      .setDescription('42Wallet')
       .setVersion('0.1')
       .addBearerAuth(undefined, 'bearerAuth')
       .build();
@@ -39,9 +40,8 @@ async function bootstrap() {
   app.use(helmet())
 
   await app.listen(port, () => {
-    logger.log(`Server listening at port ${port}`);
     logger.log(`Rodando em http://localhost:${port}/swagger#`);
-    logger.log(`Running in mode: ${nodeEnv}`);
+    logger.log(`Rodando em: ${nodeEnv}`);
   });
 }
 
