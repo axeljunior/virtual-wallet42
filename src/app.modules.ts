@@ -5,11 +5,13 @@ import { TransactionsModule } from './modules/solicitation/solicitations.module'
 import { AuthModule } from './modules/auth/auth.module';
 import { PostgresModule } from './providers/database/postgres.module';
 import { CustomConfigModule } from './config/custom-config.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
     CustomConfigModule,
     PostgresModule,
+    EventEmitterModule.forRoot(),
     UsersModule,
     TransactionsModule,
     AuthModule,

@@ -11,7 +11,9 @@ export class TransactionsService {
 
     constructor(@InjectRepository(TransactionEntity)
         private readonly transactionRepository: Repository<TransactionEntity>,
-        private readonly userService: UsersService) { }
+        private readonly userService: UsersService)
+    {}
+
     async createTransaction(dto: CreateTransactionTransferDto, user: ICurrentUser) {
         const sender = await this.userService.getUserByEmail(user.email);
         const receiver = await this.userService.getUserByEmail(dto.receiverEmail);
